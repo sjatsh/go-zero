@@ -70,7 +70,47 @@ func unread(r *bufio.Reader) error {
 	return r.UnreadRune()
 }
 
+// removeComments remove comments in template
+func removeComments(api string) string {
+
+	var out []string
+	var lo []byte
+	b := true
+
+	scanner := bufio.NewScanner(strings.NewReader(api))
+	for scanner.Scan() {
+		l := scanner.Text()
+		bs := []byte(l)
+		i := 0
+		for ; i < len(bs)-1; i++ {
+			if b {
+				if bs[i] == '/' && bs[i+1] == '*' {
+					b = false
+					i++
+				} else if bs[i] == '/' && bs[i+1] == '/' {
+					break
+				} else {
+					lo = append(lo, bs[i])
+				}
+			} else if bs[i] == '*' && bs[i+1] == '/' {
+				b = true
+				i++
+			}
+		}
+		if b && i == len(bs)-1 {
+			lo = append(lo, bs[len(bs)-1])
+		}
+		if len(lo) > 0 && b {
+			out = append(out, string(lo))
+			lo = []byte{}
+		}
+	}
+	return strings.Join(out, "\n")
+}
+
 func ParseApi(api string) (*ApiStruct, error) {
+	// delete comment in template
+	api = removeComments(api)
 	var result ApiStruct
 	scanner := bufio.NewScanner(strings.NewReader(api))
 	var parseInfo = false
